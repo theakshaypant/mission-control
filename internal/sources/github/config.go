@@ -20,11 +20,13 @@ const (
 type FetchScope string
 
 const (
-	// FetchScopeInvolved fetches only PRs where the user is author, reviewer,
+	// FetchScopeInvolved fetches only items where the user is author, reviewer,
 	// or assignee, using GitHub's search API across all configured repos.
 	FetchScopeInvolved FetchScope = "involved"
-	// FetchScopeAll fetches all open PRs in each configured repo.
+	// FetchScopeAll fetches all open items in each configured repo.
 	FetchScopeAll FetchScope = "all"
+	// FetchScopeNone disables fetching for this item type entirely.
+	FetchScopeNone FetchScope = "none"
 )
 
 // WaitsOnMeSignal is a condition that marks a PR as needing the user's attention.
@@ -112,9 +114,33 @@ type Config struct {
 	StaleDays int `yaml:"stale_days"`
 
 	// IsAssigned lists conditions that mark a PR as assigned to the user.
-	// Defaults to all conditions (author + assignee) if empty.
-	// Valid values: "assignee", "author"
+	// Defaults to all conditions (author + assignee + reviewer) if empty.
+	// Valid values: "assignee", "author", "reviewer"
+	// For issues, "reviewer" is silently ignored (issues have no reviewers).
 	IsAssigned []AssignedSignal `yaml:"is_assigned"`
+
+	// IssueScope controls which issues are fetched. Empty (default) disables
+	// issue syncing entirely. Set to "involved" or "all" to enable.
+	// "involved" uses GitHub search to return only issues the user is involved
+	// in; "all" fetches every open issue in each configured repo.
+	IssueScope FetchScope `yaml:"issue_scope"`
+
+	// MaxIssues is the maximum number of issues to fetch. Defaults to 50 when
+	// issue syncing is enabled. With issue_scope "all" this is a per-repo cap;
+	// with "involved" it is a cap across all repos combined.
+	MaxIssues int `yaml:"max_issues"`
+
+	// IssueUpdatedWithinDays skips issues that have not been updated within
+	// this many days. Defaults to 7. Set to 0 to disable the filter and fetch
+	// all open issues regardless of age.
+	IssueUpdatedWithinDays int `yaml:"issue_updated_within_days"`
+
+	// IssueCommentLimit is the maximum number of recent comments fetched per
+	// issue. Defaults to 100 (the GitHub API maximum). Lowering this reduces
+	// query cost on busy repos but may cause signals to miss older activity —
+	// only the most recent N comments are considered for signal evaluation.
+	// Must be between 1 and 100.
+	IssueCommentLimit int `yaml:"issue_comment_limit"`
 }
 
 func (c *Config) Validate() error {
@@ -143,9 +169,23 @@ func (c *Config) Validate() error {
 		}
 	}
 	switch c.PRScope {
-	case "", FetchScopeInvolved, FetchScopeAll:
+	case "", FetchScopeInvolved, FetchScopeAll, FetchScopeNone:
 	default:
 		return fmt.Errorf("github: unknown pr_scope %q", c.PRScope)
+	}
+	switch c.IssueScope {
+	case "", FetchScopeInvolved, FetchScopeAll, FetchScopeNone:
+	default:
+		return fmt.Errorf("github: unknown issue_scope %q", c.IssueScope)
+	}
+	if c.MaxIssues < 0 {
+		return fmt.Errorf("github: max_issues must be non-negative")
+	}
+	if c.IssueUpdatedWithinDays < 0 {
+		return fmt.Errorf("github: issue_updated_within_days must be non-negative")
+	}
+	if c.IssueCommentLimit < 0 || c.IssueCommentLimit > 100 {
+		return fmt.Errorf("github: issue_comment_limit must be between 0 and 100")
 	}
 	for _, s := range c.WaitsOnMe {
 		switch s {

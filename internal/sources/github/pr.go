@@ -11,10 +11,23 @@ import (
 )
 
 const (
-	defaultMaxPRs  = 50
-	maxPerPage     = 100
+	defaultMaxPRs    = 50
+	maxPerPage       = 100
 	defaultStaleDays = 30
 )
+
+// reviewEntry is a normalized review event used by activity helpers.
+type reviewEntry struct {
+	Login       string
+	State       string
+	SubmittedAt time.Time
+}
+
+// commentEntry is a normalized comment event used by activity helpers.
+type commentEntry struct {
+	Login     string
+	CreatedAt time.Time
+}
 
 // prFields contains all GraphQL fields fetched for a pull request, shared
 // between the per-repo query and the search query.
@@ -70,6 +83,22 @@ type prFields struct {
 			} `json:"commit"`
 		} `json:"nodes"`
 	} `json:"commits"`
+}
+
+func (pr prFields) reviewEntries() []reviewEntry {
+	result := make([]reviewEntry, 0, len(pr.Reviews.Nodes))
+	for _, r := range pr.Reviews.Nodes {
+		result = append(result, reviewEntry{Login: r.Author.Login, State: r.State, SubmittedAt: r.SubmittedAt})
+	}
+	return result
+}
+
+func (pr prFields) commentEntries() []commentEntry {
+	result := make([]commentEntry, 0, len(pr.Comments.Nodes))
+	for _, c := range pr.Comments.Nodes {
+		result = append(result, commentEntry{Login: c.Author.Login, CreatedAt: c.CreatedAt})
+	}
+	return result
 }
 
 // prsByRepoQuery fetches all open PRs in a single repo, ordered by most
@@ -315,11 +344,14 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 	cfg := s.config
 	user := cfg.User
 
+	reviews := pr.reviewEntries()
+	comments := pr.commentEntries()
+
 	labels := make([]string, 0, len(pr.Labels.Nodes))
 	for _, l := range pr.Labels.Nodes {
 		labels = append(labels, l.Name)
 	}
-	attrs := Attributes{
+	attrs := PRAttributes{
 		Author:         pr.Author.Login,
 		Labels:         labels,
 		IsDraft:        pr.IsDraft,
@@ -375,14 +407,14 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 		switch sig {
 		case WaitsOnMeUnreviewed:
 			// PR is not mine and I have never reviewed or commented on it.
-			if pr.Author.Login != user && latestActivityBy(pr, user) == nil {
+			if pr.Author.Login != user && latestActivityBy(reviews, comments, user) == nil {
 				fired = true
 			}
 		case WaitsOnMeAuthorUpdated:
 			// I've reviewed before, and the author has since pushed commits or replied.
 			if pr.Author.Login != user {
-				if myLast := latestActivityBy(pr, user); myLast != nil {
-					authorLatest := latestTime(time.Time{}, latestCommit(pr), latestActivityBy(pr, pr.Author.Login))
+				if myLast := latestActivityBy(reviews, comments, user); myLast != nil {
+					authorLatest := latestTime(time.Time{}, latestCommit(pr), latestActivityBy(reviews, comments, pr.Author.Login))
 					if !authorLatest.IsZero() && authorLatest.After(*myLast) {
 						fired = true
 					}
@@ -391,8 +423,8 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 		case WaitsOnMePeerActivity:
 			// Someone who is neither the author nor me has reviewed or commented
 			// since my last activity (or at any time if I've never engaged).
-			myLast := latestActivityBy(pr, user)
-			peerLatest := latestActivityExcluding(pr, user, pr.Author.Login)
+			myLast := latestActivityBy(reviews, comments, user)
+			peerLatest := latestActivityExcluding(reviews, comments, user, pr.Author.Login)
 			if peerLatest != nil && (myLast == nil || peerLatest.After(*myLast)) {
 				fired = true
 			}
@@ -405,8 +437,8 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 			// I'm the author and someone else has commented or reviewed since
 			// my last commit push or comment.
 			if pr.Author.Login == user {
-				myLastUpdate := latestTime(pr.CreatedAt, latestCommit(pr), latestActivityBy(pr, user))
-				if t := latestActivityExcluding(pr, user); t != nil && t.After(myLastUpdate) {
+				myLastUpdate := latestTime(pr.CreatedAt, latestCommit(pr), latestActivityBy(reviews, comments, user))
+				if t := latestActivityExcluding(reviews, comments, user); t != nil && t.After(myLastUpdate) {
 					fired = true
 				}
 			}
@@ -431,8 +463,8 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 	interactions := interactionSet(cfg)
 	var userActivityAt *time.Time
 
-	for _, r := range pr.Reviews.Nodes {
-		if r.Author.Login != user {
+	for _, r := range reviews {
+		if r.Login != user {
 			continue
 		}
 		var counts bool
@@ -457,8 +489,8 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 	}
 
 	if _, ok := interactions[InteractionComment]; ok {
-		for _, c := range pr.Comments.Nodes {
-			if c.Author.Login == user {
+		for _, c := range comments {
+			if c.Login == user {
 				t := c.CreatedAt
 				if userActivityAt == nil || t.After(*userActivityAt) {
 					userActivityAt = &t
@@ -486,19 +518,19 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 }
 
 // latestActivityBy returns the most recent review or comment timestamp by the
-// given login, or nil if they have no recorded activity on this PR.
-func latestActivityBy(pr prFields, login string) *time.Time {
+// given login, or nil if they have no recorded activity.
+func latestActivityBy(reviews []reviewEntry, comments []commentEntry, login string) *time.Time {
 	var latest *time.Time
-	for _, r := range pr.Reviews.Nodes {
-		if r.Author.Login == login {
+	for _, r := range reviews {
+		if r.Login == login {
 			t := r.SubmittedAt
 			if latest == nil || t.After(*latest) {
 				latest = &t
 			}
 		}
 	}
-	for _, c := range pr.Comments.Nodes {
-		if c.Author.Login == login {
+	for _, c := range comments {
+		if c.Login == login {
 			t := c.CreatedAt
 			if latest == nil || t.After(*latest) {
 				latest = &t
@@ -510,22 +542,22 @@ func latestActivityBy(pr prFields, login string) *time.Time {
 
 // latestActivityExcluding returns the most recent review or comment timestamp
 // by anyone whose login is not in the excluded set, or nil if there is none.
-func latestActivityExcluding(pr prFields, excludeLogins ...string) *time.Time {
+func latestActivityExcluding(reviews []reviewEntry, comments []commentEntry, excludeLogins ...string) *time.Time {
 	excluded := make(map[string]bool, len(excludeLogins))
 	for _, l := range excludeLogins {
 		excluded[l] = true
 	}
 	var latest *time.Time
-	for _, r := range pr.Reviews.Nodes {
-		if !excluded[r.Author.Login] {
+	for _, r := range reviews {
+		if !excluded[r.Login] {
 			t := r.SubmittedAt
 			if latest == nil || t.After(*latest) {
 				latest = &t
 			}
 		}
 	}
-	for _, c := range pr.Comments.Nodes {
-		if !excluded[c.Author.Login] {
+	for _, c := range comments {
+		if !excluded[c.Login] {
 			t := c.CreatedAt
 			if latest == nil || t.After(*latest) {
 				latest = &t

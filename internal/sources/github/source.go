@@ -47,11 +47,26 @@ func (s *Source) graphqlEndpoint() string {
 	return "https://" + s.config.Host + "/api/graphql"
 }
 
-// Sync fetches GitHub PRs from all configured repos since the last sync.
+// Sync fetches GitHub items from all configured repos since the last sync.
+// PRs are fetched unless pr_scope is "none". Issues are fetched only when
+// issue_scope is set to "involved" or "all".
 func (s *Source) Sync(ctx context.Context) ([]core.Item, error) {
-	items, err := s.syncPRs(ctx)
-	if err != nil {
-		return nil, err
+	var items []core.Item
+
+	if s.config.PRScope != FetchScopeNone {
+		prItems, err := s.syncPRs(ctx)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, prItems...)
+	}
+
+	if s.config.IssueScope != "" && s.config.IssueScope != FetchScopeNone {
+		issueItems, err := s.syncIssues(ctx)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, issueItems...)
 	}
 
 	now := time.Now()
