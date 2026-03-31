@@ -5,6 +5,39 @@ import (
 	"time"
 )
 
+// ItemState holds per-item state tracked by mission-control.
+//
+// LastInteractedAt is updated by source syncs — it reflects when the user last
+// took a tracked action on the item (e.g. reviewed, commented) as reported by
+// the source platform.
+//
+// Dismissed and SnoozedUntil are set only by explicit user actions within
+// mission-control and are never overwritten by syncs.
+type ItemState struct {
+	ItemID           string
+	LastInteractedAt *time.Time
+	Dismissed        bool
+	SnoozedUntil     *time.Time
+}
+
+// NeedsAttention reports whether the item requires the user's attention given
+// the current state. A nil state is treated as no prior interaction.
+func (i Item) NeedsAttention(state *ItemState) bool {
+	if state == nil {
+		return true
+	}
+	if state.Dismissed {
+		return false
+	}
+	if state.SnoozedUntil != nil && state.SnoozedUntil.After(time.Now()) {
+		return false
+	}
+	if state.LastInteractedAt == nil {
+		return true
+	}
+	return i.UpdatedAt.After(*state.LastInteractedAt)
+}
+
 // SourceKind is a string identifier for a source type (e.g. "github", "jira").
 // Each source package defines its own Kind constant typed as SourceKind.
 type SourceKind string
