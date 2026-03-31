@@ -51,7 +51,11 @@ type ItemType string
 type Item struct {
 	ID     string
 	Source SourceKind
-	Type   ItemType
+	// SourceName is the configured name of the source instance that produced
+	// this item (e.g. "work" or "personal"), set by the sync runner.
+	// Distinct from Source (the kind, e.g. "github").
+	SourceName string
+	Type       ItemType
 
 	Title string
 	URL   string
@@ -76,6 +80,11 @@ type Item struct {
 	// Set by the source during sync; nil means no recorded user activity.
 	// What counts as an interaction is defined per-source in Config.
 	UserActivityAt *time.Time
+
+	// Closed is true when the upstream item is no longer active (e.g. a closed
+	// GitHub issue or a merged/closed PR). The sync runner will delete closed
+	// items from the store rather than upserting them.
+	Closed bool
 
 	// ExternalRefs holds cross-source references found in item content,
 	// e.g. a Jira ticket ID mentioned in a GitHub PR description.

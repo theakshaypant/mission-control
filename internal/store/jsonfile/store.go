@@ -88,6 +88,15 @@ func (s *Store) UpsertItem(_ context.Context, item core.Item) error {
 	return s.flush()
 }
 
+// DeleteItem removes an item and its state by ID. No-op if the item is absent.
+func (s *Store) DeleteItem(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.data.Items, id)
+	delete(s.data.ItemStates, id)
+	return s.flush()
+}
+
 // ListItems returns items matching the filter. When NeedsAttention is true,
 // only items that pass NeedsAttention (given their stored state) are returned.
 func (s *Store) ListItems(_ context.Context, filter core.ItemFilter) ([]core.Item, error) {
@@ -97,6 +106,9 @@ func (s *Store) ListItems(_ context.Context, filter core.ItemFilter) ([]core.Ite
 	var out []core.Item
 	for _, item := range s.data.Items {
 		if filter.Source != "" && item.Source != filter.Source {
+			continue
+		}
+		if filter.SourceName != "" && item.SourceName != filter.SourceName {
 			continue
 		}
 		if len(filter.Types) > 0 && !containsType(filter.Types, item.Type) {

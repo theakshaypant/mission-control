@@ -16,6 +16,7 @@ import (
 type ItemSummary struct {
 	ID            string          `json:"id"`
 	Source        core.SourceKind `json:"source"`
+	SourceName    string          `json:"source_name"`
 	Type          core.ItemType   `json:"type"`
 	Title         string          `json:"title"`
 	URL           string          `json:"url"`
@@ -104,6 +105,7 @@ func toSummary(item core.Item) ItemSummary {
 	s := ItemSummary{
 		ID:         item.ID,
 		Source:     item.Source,
+		SourceName: item.SourceName,
 		Type:       item.Type,
 		Title:      item.Title,
 		URL:        item.URL,

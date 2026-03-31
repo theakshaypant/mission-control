@@ -307,21 +307,12 @@ func (s *Source) normalizeIssue(issue issueFields, namespace string) core.Item {
 		State:  issue.State,
 	}
 
-	// Closed issues are never actionable. Upsert them so the store reflects
-	// the current state, but skip signal evaluation entirely.
+	// Closed issues are never actionable. Return a tombstone so the runner
+	// removes any stale entry from the store.
 	if issue.State == "CLOSED" {
-		attrsJSON, _ := json.Marshal(attrs)
 		return core.Item{
-			ID:         ItemID(namespace, issue.Number),
-			Source:     Kind,
-			Type:       TypeIssue,
-			Title:      issue.Title,
-			URL:        issue.URL,
-			Namespace:  namespace,
-			CreatedAt:  issue.CreatedAt,
-			UpdatedAt:  issue.UpdatedAt,
-			WaitsOnMe:  false,
-			Attributes: attrsJSON,
+			ID:     ItemID(namespace, issue.Number),
+			Closed: true,
 		}
 	}
 

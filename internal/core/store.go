@@ -11,6 +11,10 @@ type Store interface {
 	// UpsertItem inserts or updates an item from a source sync.
 	UpsertItem(ctx context.Context, item Item) error
 
+	// DeleteItem removes an item and its state from the store.
+	// It is a no-op if the item does not exist.
+	DeleteItem(ctx context.Context, id string) error
+
 	// ListItems returns items matching the given filter.
 	ListItems(ctx context.Context, filter ItemFilter) ([]Item, error)
 
@@ -33,6 +37,10 @@ type Store interface {
 type ItemFilter struct {
 	// Source filters to a specific source kind. Zero value means all sources.
 	Source SourceKind
+
+	// SourceName filters to a specific named source instance (e.g. "work").
+	// Zero value means all source instances.
+	SourceName string
 
 	// Types filters to specific item types. Empty means all types.
 	Types []ItemType

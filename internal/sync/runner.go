@@ -21,6 +21,15 @@ func New(store core.Store, sources []core.Source) *Runner {
 	return &Runner{store: store, sources: sources}
 }
 
+// Sources returns the names of all configured sources.
+func (r *Runner) Sources() []string {
+	names := make([]string, len(r.sources))
+	for i, src := range r.sources {
+		names[i] = src.Name()
+	}
+	return names
+}
+
 // fetchResult holds the outcome of one source's network fetch.
 type fetchResult struct {
 	src   core.Source
@@ -108,6 +117,14 @@ func (r *Runner) fetchAll(ctx context.Context) []fetchResult {
 // writeResults commits one source's fetch results to the store.
 func (r *Runner) writeResults(ctx context.Context, res fetchResult) error {
 	for _, item := range res.items {
+		// Closed items are tombstones: remove any stale entry from the store.
+		if item.Closed {
+			if err := r.store.DeleteItem(ctx, item.ID); err != nil {
+				return fmt.Errorf("sync %q: delete closed %s: %w", res.src.Name(), item.ID, err)
+			}
+			continue
+		}
+		item.SourceName = res.src.Name()
 		if err := r.store.UpsertItem(ctx, item); err != nil {
 			return fmt.Errorf("sync %q: upsert %s: %w", res.src.Name(), item.ID, err)
 		}
