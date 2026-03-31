@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 
 	github "github.com/theakshaypant/mission-control/internal/sources/github"
 )
@@ -19,7 +20,7 @@ func TestGitHubIssueScopeInvolved(t *testing.T) {
 	cfg := baseIssueConfig(token, user, repos)
 	src := github.New("e2e-issues-involved", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -46,7 +47,7 @@ func TestGitHubIssueScopeAll(t *testing.T) {
 	cfg.MaxIssues = limit
 	src := github.New("e2e-issues-all", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -69,7 +70,7 @@ func TestGitHubIssueSignalUnreviewed(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeUnreviewed}
 	src := github.New("e2e-issues-unreviewed", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestGitHubIssueSignalAuthorUpdated(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeAuthorUpdated}
 	src := github.New("e2e-issues-author-updated", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -115,7 +116,7 @@ func TestGitHubIssueSignalPeerActivity(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMePeerActivity}
 	src := github.New("e2e-issues-peer-activity", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -135,7 +136,7 @@ func TestGitHubIssueSignalReviewReceived(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeReviewReceived}
 	src := github.New("e2e-issues-review-received", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -156,7 +157,7 @@ func TestGitHubIssueSignalStale(t *testing.T) {
 	cfg.StaleDays = 30
 	src := github.New("e2e-issues-stale", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -183,7 +184,7 @@ func TestGitHubIssueSignalAll(t *testing.T) {
 			cfg.WaitsOnMe = []github.WaitsOnMeSignal{sig}
 			src := github.New("e2e-issues-signal", cfg)
 
-			items, err := src.Sync(context.Background())
+			items, err := src.Sync(context.Background(), nil)
 			if err != nil {
 				t.Fatalf("Sync failed: %v", err)
 			}
@@ -204,7 +205,7 @@ func TestGitHubMixedSync(t *testing.T) {
 	cfg.MaxIssues = 50
 	src := github.New("e2e-issues-mixed", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -230,13 +231,14 @@ func TestGitHubIssueIncrementalSync(t *testing.T) {
 
 	src := github.New("e2e-issues-incremental", baseIssueConfig(token, user, repos))
 
-	first, err := src.Sync(context.Background())
+	now := time.Now()
+	first, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("first Sync failed: %v", err)
 	}
 	t.Logf("first sync: %d items", len(first))
 
-	second, err := src.Sync(context.Background())
+	second, err := src.Sync(context.Background(), &now)
 	if err != nil {
 		t.Fatalf("second Sync failed: %v", err)
 	}

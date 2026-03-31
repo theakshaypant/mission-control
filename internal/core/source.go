@@ -16,13 +16,9 @@ type Source interface {
 	// Config returns the configuration for this source instance.
 	Config() SourceConfig
 
-	// Sync fetches new or updated items since the last sync.
-	// The source is responsible for tracking its own sync cursor.
-	Sync(ctx context.Context) ([]Item, error)
-
-	// LastSyncedAt returns the time of the last successful sync, or nil if
-	// the source has never synced.
-	LastSyncedAt() *time.Time
+	// Sync fetches new or updated items. since is the cursor from the last
+	// successful sync; pass nil for a full fetch on first run.
+	Sync(ctx context.Context, since *time.Time) ([]Item, error)
 }
 
 // SourceConfig is implemented by each source's typed config struct.

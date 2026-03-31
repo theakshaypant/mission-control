@@ -25,7 +25,7 @@ func TestGitHubPRSignalUnreviewed(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeUnreviewed}
 	src := github.New("e2e-unreviewed", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestGitHubPRSignalAuthorUpdated(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeAuthorUpdated}
 	src := github.New("e2e-author-updated", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestGitHubPRSignalPeerActivity(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMePeerActivity}
 	src := github.New("e2e-peer-activity", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestGitHubPRSignalReviewReceived(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeReviewReceived}
 	src := github.New("e2e-review-received", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestGitHubPRSignalApprovedNotMerged(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeApprovedNotMerged}
 	src := github.New("e2e-approved-not-merged", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestGitHubPRSignalApproved(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeApproved}
 	src := github.New("e2e-approved", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestGitHubPRSignalStale(t *testing.T) {
 	cfg.StaleDays = 30
 	src := github.New("e2e-stale", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestGitHubPRSignalAll(t *testing.T) {
 			cfg.WaitsOnMe = []github.WaitsOnMeSignal{sig}
 			src := github.New("e2e-signal", cfg)
 
-			items, err := src.Sync(context.Background())
+			items, err := src.Sync(context.Background(), nil)
 			if err != nil {
 				t.Fatalf("Sync failed: %v", err)
 			}

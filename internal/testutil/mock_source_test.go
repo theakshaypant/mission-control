@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/theakshaypant/mission-control/internal/core"
 	"github.com/theakshaypant/mission-control/internal/testutil"
@@ -28,7 +29,7 @@ func TestMockSource_Sync_ReturnsItems(t *testing.T) {
 		Items:   items,
 	}
 
-	got, err := src.Sync(context.Background())
+	got, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -38,8 +39,17 @@ func TestMockSource_Sync_ReturnsItems(t *testing.T) {
 	if src.SyncCalled != 1 {
 		t.Errorf("expected SyncCalled=1, got %d", src.SyncCalled)
 	}
-	if src.LastSyncedAt() == nil {
-		t.Error("expected LastSyncedAt to be set after sync")
+	if src.LastSince != nil {
+		t.Error("expected LastSince=nil when nil was passed")
+	}
+}
+
+func TestMockSource_Sync_RecordsLastSince(t *testing.T) {
+	src := &testutil.MockSource{NameVal: "test"}
+	now := time.Now()
+	src.Sync(context.Background(), &now)
+	if src.LastSince == nil || !src.LastSince.Equal(now) {
+		t.Errorf("expected LastSince=%v, got %v", now, src.LastSince)
 	}
 }
 
@@ -50,19 +60,9 @@ func TestMockSource_Sync_PropagatesError(t *testing.T) {
 		SyncErr: syncErr,
 	}
 
-	_, err := src.Sync(context.Background())
+	_, err := src.Sync(context.Background(), nil)
 	if !errors.Is(err, syncErr) {
 		t.Errorf("expected %v, got %v", syncErr, err)
-	}
-	if src.LastSyncedAt() != nil {
-		t.Error("LastSyncedAt should not be set on error")
-	}
-}
-
-func TestMockSource_NeverSynced(t *testing.T) {
-	src := &testutil.MockSource{NameVal: "test"}
-	if src.LastSyncedAt() != nil {
-		t.Error("expected nil LastSyncedAt before first sync")
 	}
 }
 

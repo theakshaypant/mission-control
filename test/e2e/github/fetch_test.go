@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 
 	github "github.com/theakshaypant/mission-control/internal/sources/github"
 )
@@ -21,7 +22,7 @@ func TestGitHubPRScopeAll(t *testing.T) {
 	cfg.MaxPRs = limit
 	src := github.New("e2e-fetch-all", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -29,10 +30,6 @@ func TestGitHubPRScopeAll(t *testing.T) {
 		t.Errorf("got %d items, expected at most %d (limit %d × %d repos)",
 			len(items), limit*len(repos), limit, len(repos))
 	}
-	if src.LastSyncedAt() == nil {
-		t.Error("LastSyncedAt should be set after a successful sync")
-	}
-
 	printItems(t, items)
 }
 
@@ -49,7 +46,7 @@ func TestGitHubPRScopeInvolved(t *testing.T) {
 	cfg.MaxPRs = 50
 	src := github.New("e2e-fetch-involved", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -70,7 +67,7 @@ func TestGitHubPRAssignedAsReviewer(t *testing.T) {
 	cfg.WaitsOnMe = []github.WaitsOnMeSignal{github.WaitsOnMeUnreviewed}
 	src := github.New("e2e-assigned-reviewer", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -85,17 +82,18 @@ func TestGitHubPRIncrementalSync(t *testing.T) {
 
 	src := github.New("e2e-incremental", baseConfig(token, user, repos))
 
-	first, err := src.Sync(context.Background())
+	now := time.Now()
+	first, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("first Sync failed: %v", err)
 	}
 	t.Logf("first sync:  %d items", len(first))
 
-	second, err := src.Sync(context.Background())
+	second, err := src.Sync(context.Background(), &now)
 	if err != nil {
 		t.Fatalf("second Sync failed: %v", err)
 	}
-	t.Logf("second sync: %d items (expected 0 — all PRs predate lastSyncedAt)", len(second))
+	t.Logf("second sync: %d items (expected 0 — all PRs predate since)", len(second))
 
 	if len(second) != 0 {
 		t.Errorf("expected 0 items on incremental sync, got %d", len(second))

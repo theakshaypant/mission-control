@@ -46,7 +46,7 @@ func TestGitHubPRInteractions(t *testing.T) {
 			cfg.Interactions = tc.interactions
 			src := github.New("e2e-interactions", cfg)
 
-			items, err := src.Sync(context.Background())
+			items, err := src.Sync(context.Background(), nil)
 			if err != nil {
 				t.Fatalf("Sync failed: %v", err)
 			}

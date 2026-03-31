@@ -23,7 +23,7 @@ func TestGitHubScenarioMaintainer(t *testing.T) {
 	// Default waits_on_me: unreviewed, author_updated, peer_activity, review_received.
 	src := github.New("e2e-maintainer", baseConfig(token, user, repos))
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestGitHubScenarioAspiringContributor(t *testing.T) {
 	}
 	src := github.New("e2e-aspiring-contributor", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestGitHubScenarioContributor(t *testing.T) {
 	}
 	src := github.New("e2e-contributor", cfg)
 
-	items, err := src.Sync(context.Background())
+	items, err := src.Sync(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}

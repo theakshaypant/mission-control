@@ -120,7 +120,7 @@ const (
 	defaultIssueCommentLimit      = 10
 )
 
-func (s *Source) syncIssues(ctx context.Context) ([]core.Item, error) {
+func (s *Source) syncIssues(ctx context.Context, sincePtr *time.Time) ([]core.Item, error) {
 	scope := s.config.IssueScope
 	maxIssues := s.config.MaxIssues
 	if maxIssues == 0 {
@@ -129,8 +129,8 @@ func (s *Source) syncIssues(ctx context.Context) ([]core.Item, error) {
 
 	// since is the incremental sync cursor from the last run.
 	var since time.Time
-	if s.lastSyncedAt != nil {
-		since = *s.lastSyncedAt
+	if sincePtr != nil {
+		since = *sincePtr
 	}
 
 	// cutoff is the effective lower bound for issue updatedAt. It is the more

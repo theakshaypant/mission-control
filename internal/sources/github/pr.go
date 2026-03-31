@@ -187,7 +187,7 @@ type involvedPRsResponse struct {
 	} `json:"search"`
 }
 
-func (s *Source) syncPRs(ctx context.Context) ([]core.Item, error) {
+func (s *Source) syncPRs(ctx context.Context, sincePtr *time.Time) ([]core.Item, error) {
 	scope := s.config.PRScope
 	if scope == "" {
 		scope = FetchScopeInvolved
@@ -198,8 +198,8 @@ func (s *Source) syncPRs(ctx context.Context) ([]core.Item, error) {
 	}
 
 	var since time.Time
-	if s.lastSyncedAt != nil {
-		since = *s.lastSyncedAt
+	if sincePtr != nil {
+		since = *sincePtr
 	}
 
 	var items []core.Item
