@@ -29,6 +29,7 @@ func makeItem(id string, updatedAt time.Time) core.Item {
 		Type:      "pr",
 		Namespace: "owner/repo",
 		UpdatedAt: updatedAt,
+		WaitsOnMe: true,
 	}
 }
 
@@ -220,30 +221,28 @@ func TestListItemsNeedsAttention(t *testing.T) {
 	// Snoozed item — should not appear.
 	snoozed := makeItem("github:owner/repo#3", now)
 
-	// Interacted and not updated since — should not appear.
-	stale := makeItem("github:owner/repo#4", now.Add(-time.Hour))
+	// Source says nothing waits on user — should not appear.
+	noSignal := makeItem("github:owner/repo#4", now)
+	noSignal.WaitsOnMe = false
 
-	// Interacted but updated after interaction — should appear.
-	updated := makeItem("github:owner/repo#5", now)
+	// WaitsOnMe with no state override — should appear.
+	pending := makeItem("github:owner/repo#5", now)
 
-	for _, item := range []core.Item{newItem, dismissed, snoozed, stale, updated} {
+	for _, item := range []core.Item{newItem, dismissed, snoozed, noSignal, pending} {
 		s.UpsertItem(ctx, item)
 	}
 
-	interactedAt := now.Add(-30 * time.Minute)
 	futureSnooze := now.Add(time.Hour)
 
 	s.SetItemState(ctx, core.ItemState{ItemID: dismissed.ID, Dismissed: true})
 	s.SetItemState(ctx, core.ItemState{ItemID: snoozed.ID, SnoozedUntil: &futureSnooze})
-	s.SetItemState(ctx, core.ItemState{ItemID: stale.ID, LastInteractedAt: &interactedAt})
-	s.SetItemState(ctx, core.ItemState{ItemID: updated.ID, LastInteractedAt: &interactedAt})
 
 	items, err := s.ListItems(ctx, core.ItemFilter{NeedsAttention: true})
 	if err != nil {
 		t.Fatalf("ListItems: %v", err)
 	}
 
-	wantIDs := map[string]bool{newItem.ID: true, updated.ID: true}
+	wantIDs := map[string]bool{newItem.ID: true, pending.ID: true}
 	if len(items) != len(wantIDs) {
 		t.Errorf("expected %d items, got %d: %v", len(wantIDs), len(items), itemIDs(items))
 	}
@@ -372,21 +371,21 @@ func TestNeedsAttentionLogic(t *testing.T) {
 
 	cases := []struct {
 		name  string
+		item  core.Item
 		state *core.ItemState
 		want  bool
 	}{
-		{"nil state → needs attention", nil, true},
-		{"no prior interaction", &core.ItemState{}, true},
-		{"dismissed → no attention", &core.ItemState{Dismissed: true}, false},
-		{"snoozed in future → no attention", &core.ItemState{SnoozedUntil: &future}, false},
-		{"snooze expired → needs attention", &core.ItemState{SnoozedUntil: &past}, true},
-		{"interacted before update → needs attention", &core.ItemState{LastInteractedAt: &past}, true},
-		{"interacted after update → no attention", &core.ItemState{LastInteractedAt: &future}, false},
+		{"nil state → needs attention", item, nil, true},
+		{"no prior interaction", item, &core.ItemState{}, true},
+		{"dismissed → no attention", item, &core.ItemState{Dismissed: true}, false},
+		{"snoozed in future → no attention", item, &core.ItemState{SnoozedUntil: &future}, false},
+		{"snooze expired → needs attention", item, &core.ItemState{SnoozedUntil: &past}, true},
+		{"WaitsOnMe false → no attention", func() core.Item { i := item; i.WaitsOnMe = false; return i }(), nil, false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := item.NeedsAttention(tc.state); got != tc.want {
+			if got := tc.item.NeedsAttention(tc.state); got != tc.want {
 				t.Errorf("NeedsAttention = %v, want %v", got, tc.want)
 			}
 		})

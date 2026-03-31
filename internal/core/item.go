@@ -23,6 +23,9 @@ type ItemState struct {
 // NeedsAttention reports whether the item requires the user's attention given
 // the current state. A nil state is treated as no prior interaction.
 func (i Item) NeedsAttention(state *ItemState) bool {
+	if !i.WaitsOnMe {
+		return false
+	}
 	if state == nil {
 		return true
 	}
@@ -32,10 +35,7 @@ func (i Item) NeedsAttention(state *ItemState) bool {
 	if state.SnoozedUntil != nil && state.SnoozedUntil.After(time.Now()) {
 		return false
 	}
-	if state.LastInteractedAt == nil {
-		return true
-	}
-	return i.UpdatedAt.After(*state.LastInteractedAt)
+	return true
 }
 
 // SourceKind is a string identifier for a source type (e.g. "github", "jira").
