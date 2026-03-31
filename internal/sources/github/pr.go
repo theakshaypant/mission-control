@@ -216,14 +216,7 @@ func (s *Source) syncPRs(ctx context.Context, sincePtr *time.Time) ([]core.Item,
 		return nil, err
 	}
 
-	// Only surface PRs where the user has a pending action.
-	actionable := items[:0]
-	for _, item := range items {
-		if item.WaitsOnMe {
-			actionable = append(actionable, item)
-		}
-	}
-	return actionable, nil
+	return items, nil
 }
 
 // fetchAllPRs retrieves all open PRs from each configured repo. Results are
@@ -423,10 +416,13 @@ func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
 		case WaitsOnMePeerActivity:
 			// Someone who is neither the author nor me has reviewed or commented
 			// since my last activity (or at any time if I've never engaged).
-			myLast := latestActivityBy(reviews, comments, user)
-			peerLatest := latestActivityExcluding(reviews, comments, user, pr.Author.Login)
-			if peerLatest != nil && (myLast == nil || peerLatest.After(*myLast)) {
-				fired = true
+			// Skipped when the user is the author — review_received covers that case.
+			if pr.Author.Login != user {
+				myLast := latestActivityBy(reviews, comments, user)
+				peerLatest := latestActivityExcluding(reviews, comments, user, pr.Author.Login)
+				if peerLatest != nil && (myLast == nil || peerLatest.After(*myLast)) {
+					fired = true
+				}
 			}
 		case WaitsOnMeApprovedNotMerged:
 			// GitHub considers this PR fully approved.

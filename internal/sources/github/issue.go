@@ -31,6 +31,7 @@ type issueFields struct {
 			Name string `json:"name"`
 		} `json:"nodes"`
 	} `json:"labels"`
+	State    string `json:"state"` // "OPEN" or "CLOSED"
 	Comments struct {
 		Nodes []struct {
 			Author    struct{ Login string `json:"login"` } `json:"author"`
@@ -55,7 +56,7 @@ query IssuesByRepo($owner: String!, $repo: String!, $first: Int!, $after: String
     issues(states: [OPEN], first: $first, after: $after, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title url createdAt updatedAt
+        number title url createdAt updatedAt state
         author { login }
         assignees(first: 10) { nodes { login } }
         labels(first: 20) { nodes { name } }
@@ -87,7 +88,7 @@ query InvolvedIssues($q: String!, $first: Int!, $after: String, $commentLimit: I
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on Issue {
-        number title url createdAt updatedAt
+        number title url createdAt updatedAt state
         repository { nameWithOwner }
         author { login }
         assignees(first: 10) { nodes { login } }
@@ -167,14 +168,7 @@ func (s *Source) syncIssues(ctx context.Context, sincePtr *time.Time) ([]core.It
 		return nil, err
 	}
 
-	// Only surface issues where the user has a pending action.
-	actionable := items[:0]
-	for _, item := range items {
-		if item.WaitsOnMe {
-			actionable = append(actionable, item)
-		}
-	}
-	return actionable, nil
+	return items, nil
 }
 
 // fetchAllIssues retrieves all open issues from each configured repo. Results
@@ -240,12 +234,16 @@ func (s *Source) fetchAllIssues(ctx context.Context, since time.Time, maxIssues,
 // when available to limit results to recently updated issues.
 func (s *Source) fetchInvolvedIssues(ctx context.Context, since time.Time, maxIssues, commentLimit int) ([]core.Item, error) {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "involves:%s is:issue is:open", s.config.User)
+	// On the first run (no cursor) restrict to open issues only to avoid
+	// pulling in historical closed issues. On incremental runs, also include
+	// recently-closed issues so the store can be updated when an issue closes.
+	if since.IsZero() {
+		fmt.Fprintf(&sb, "involves:%s is:issue is:open", s.config.User)
+	} else {
+		fmt.Fprintf(&sb, "involves:%s is:issue updated:>%s", s.config.User, since.UTC().Format("2006-01-02"))
+	}
 	for _, r := range s.config.Repos {
 		fmt.Fprintf(&sb, " repo:%s", r)
-	}
-	if !since.IsZero() {
-		fmt.Fprintf(&sb, " updated:>%s", since.UTC().Format("2006-01-02"))
 	}
 	searchQuery := sb.String()
 
@@ -306,7 +304,25 @@ func (s *Source) normalizeIssue(issue issueFields, namespace string) core.Item {
 	attrs := IssueAttributes{
 		Author: issue.Author.Login,
 		Labels: labels,
-		State:  "open",
+		State:  issue.State,
+	}
+
+	// Closed issues are never actionable. Upsert them so the store reflects
+	// the current state, but skip signal evaluation entirely.
+	if issue.State == "CLOSED" {
+		attrsJSON, _ := json.Marshal(attrs)
+		return core.Item{
+			ID:         ItemID(namespace, issue.Number),
+			Source:     Kind,
+			Type:       TypeIssue,
+			Title:      issue.Title,
+			URL:        issue.URL,
+			Namespace:  namespace,
+			CreatedAt:  issue.CreatedAt,
+			UpdatedAt:  issue.UpdatedAt,
+			WaitsOnMe:  false,
+			Attributes: attrsJSON,
+		}
 	}
 
 	// IsAssigned — reviewer signal is not applicable to issues (silently skipped).
