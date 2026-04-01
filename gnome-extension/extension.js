@@ -22,6 +22,18 @@ function truncate(s, n) {
     return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
+// Returns a human-readable relative time string, e.g. "3m ago", "2h ago".
+function relativeTime(isoString) {
+    if (!isoString) return 'never';
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1)  return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+}
+
 const Indicator = GObject.registerClass(
     class Indicator extends PanelMenu.Button {
         _init(apiUrl) {
@@ -79,11 +91,14 @@ const Indicator = GObject.registerClass(
             if (this._refreshing) return;
             this._refreshing = true;
             try {
-                const priority = await this._get('/summary');
+                const [priority, syncStatus] = await Promise.all([
+                    this._get('/summary'),
+                    this._get('/sync/status').catch(() => []),
+                ]);
                 if (this._destroyed) return;
                 const count = priority.length;
                 this._label.set_text(count > 0 ? `MC · ${count}` : 'MC');
-                this._buildMenu(priority);
+                this._buildMenu(priority, syncStatus);
             } catch (_e) {
                 if (this._destroyed) return;
                 this._label.set_text('MC ⚠');
@@ -100,7 +115,7 @@ const Indicator = GObject.registerClass(
             return item;
         }
 
-        _buildMenu(priority) {
+        _buildMenu(priority, syncStatus = []) {
             this.menu.removeAll();
 
             this._addStatic(
@@ -135,6 +150,20 @@ const Indicator = GObject.registerClass(
             }
 
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+            if (syncStatus.length > 0) {
+                this._addStatic(
+                    'LAST SYNC',
+                    'font-family: monospace; font-size: 10px; color: #9ca3af;',
+                );
+                for (const s of syncStatus) {
+                    this._addStatic(
+                        `  ${s.name}  ·  ${relativeTime(s.last_synced_at)}`,
+                        'font-family: monospace; font-size: 10px; color: #6b7280;',
+                    );
+                }
+                this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            }
 
             const dash = new PopupMenu.PopupMenuItem('Open Dashboard');
             dash.connect('activate', () => {
