@@ -144,7 +144,11 @@ func (s *Source) syncIssues(ctx context.Context, sincePtr *time.Time) ([]core.It
 	cutoff := since
 	if updatedWithin > 0 {
 		threshold := time.Now().AddDate(0, 0, -updatedWithin)
-		if threshold.After(cutoff) {
+		// Always look back at least updatedWithin days, even on incremental runs.
+		// On the first run (cutoff is zero) the threshold limits the initial
+		// fetch. On subsequent runs the threshold extends the window backward so
+		// issues older than the last sync cursor are still returned.
+		if cutoff.IsZero() || threshold.Before(cutoff) {
 			cutoff = threshold
 		}
 	}
