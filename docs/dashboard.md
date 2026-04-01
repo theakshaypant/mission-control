@@ -27,6 +27,8 @@ The server syncs your configured sources in the background on their configured i
 
 ## Layout
 
+![Dashboard overview](assets/dashboard-overview.png)
+
 ### Header
 
 The top bar shows the timestamp of the last briefing and gives you the **Sync** button. Click it to open a dropdown where you can sync all sources at once or pick a specific source by name. The sync spinner replaces the icon while a sync is in progress.
@@ -81,6 +83,8 @@ Permanently removes the item from your list. It won't reappear on future syncs, 
 Dismissal is a local decision — nothing is written back to GitHub or wherever the item came from.
 
 ### Snooze
+
+![Snooze modal](assets/dashboard-snooze-modal.png)
 
 Hides the item until a time you choose. Once the snooze expires, the item reappears automatically on the next sync if it still has active signals.
 

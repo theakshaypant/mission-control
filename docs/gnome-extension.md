@@ -108,6 +108,8 @@ The extension picks up the new value the next time it refreshes (every 30 second
 
 ## Using the indicator
 
+![GNOME panel indicator with menu open](assets/gnome-extension-menu.png)
+
 When items need your attention the label shows **MC · N** where N is the count. When everything is clear it shows just **MC**. If the server can't be reached it shows **MC ⚠**.
 
 Click the indicator to open the menu:

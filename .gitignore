@@ -1,0 +1,34 @@
+# Build output
+tmp/
+dist/
+bin/
+
+# Go
+*.exe
+*.test
+*.out
+/vendor/
+
+# Node / React
+web/node_modules/
+web/dist/
+
+# Embedded UI build (produced by Dockerfile, not committed)
+cmd/server/ui/*
+!cmd/server/ui/.gitkeep
+
+# Environment and secrets
+.env
+.env.*
+*.env
+config.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
