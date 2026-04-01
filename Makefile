@@ -1,3 +1,5 @@
+EXT_UUID   = mission-control@theakshaypant
+EXT_DIR    = $(HOME)/.local/share/gnome-shell/extensions/$(EXT_UUID)
 IMAGE_NAME ?= mission-control
 
 .PHONY: test test-e2e test-e2e-github lint install-gnome-ext docker-build
@@ -36,3 +38,22 @@ docker-run:
 		--user $$(id -u):$$(id -g) \
 		-v $(HOME)/.config/mission-control:/config \
 		$(IMAGE_NAME) -config /config/config.yaml
+
+# First install: copy files, then log out and back in (required on Wayland),
+# then run: gnome-extensions enable $(EXT_UUID)
+#
+# Subsequent updates (extension already enabled):
+#   make update-gnome-ext
+install-gnome-ext:
+	mkdir -p $(EXT_DIR)
+	cp -r gnome-extension/. $(EXT_DIR)/
+	glib-compile-schemas $(EXT_DIR)/schemas/
+	@echo "Files copied. Log out and back in, then run:"
+	@echo "  gnome-extensions enable $(EXT_UUID)"
+
+# Update an already-enabled extension without logging out.
+update-gnome-ext:
+	cp -r gnome-extension/. $(EXT_DIR)/
+	glib-compile-schemas $(EXT_DIR)/schemas/
+	gnome-extensions disable $(EXT_UUID)
+	gnome-extensions enable $(EXT_UUID)

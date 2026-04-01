@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.mission-control"
+          path="/org/gnome/shell/extensions/mission-control/">
+    <key name="api-url" type="s">
+      <default>'http://localhost:5040'</default>
+      <summary>Mission Control API server URL</summary>
+      <description>Base URL of the mission-control server (e.g. http://localhost:5040).</description>
+    </key>
+  </schema>
+</schemalist>

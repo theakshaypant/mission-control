@@ -1,0 +1,8 @@
+{
+  "name": "Mission Control",
+  "description": "Surface what needs your attention — panel indicator for mission-control.",
+  "uuid": "mission-control@theakshaypant",
+  "gettext-domain": "mission-control@theakshaypant",
+  "version": 1,
+  "shell-version": ["45", "46", "47", "48", "49"]
+}
