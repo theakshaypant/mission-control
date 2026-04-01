@@ -33,7 +33,7 @@ func newTestServer(t *testing.T, items ...core.Item) (*api.Server, core.Store) {
 	src := &testutil.MockSource{NameVal: "test-src"}
 	runner := syncp.New(store, []core.Source{src})
 	a := actions.New(store, runner)
-	return api.New(":0", a), store
+	return api.New(":0", a, nil), store
 }
 
 func makeItem(id string) core.Item {

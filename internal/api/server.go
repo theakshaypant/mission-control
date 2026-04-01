@@ -6,6 +6,7 @@ package api
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"net/http"
 	"time"
 
@@ -18,8 +19,9 @@ type Server struct {
 }
 
 // New constructs a Server that listens on addr and routes all requests
-// through the actions layer.
-func New(addr string, a *actions.Actions) *Server {
+// through the actions layer. If static is non-nil it is served at / as a
+// single-page application (unknown paths fall back to index.html).
+func New(addr string, a *actions.Actions, static fs.FS) *Server {
 	items := newItemsHandler(a)
 	sync := newSyncHandler(a)
 
@@ -32,12 +34,39 @@ func New(addr string, a *actions.Actions) *Server {
 	mux.HandleFunc("POST /sync", sync.syncAll)
 	mux.HandleFunc("POST /sync/{source}", sync.syncSource)
 
+	if static != nil {
+		mux.Handle("/", spaHandler(static))
+	}
+
 	return &Server{
 		srv: &http.Server{
 			Addr:    addr,
 			Handler: chain(mux, withCORS, withRecovery),
 		},
 	}
+}
+
+// spaHandler serves files from the given FS. If the requested path does not
+// exist in the FS it falls back to index.html, supporting client-side routing.
+func spaHandler(files fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(files))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check whether the file exists in the embedded FS.
+		path := r.URL.Path
+		if path == "/" {
+			path = "index.html"
+		}
+		// Strip leading slash for fs.Stat.
+		if len(path) > 0 && path[0] == '/' {
+			path = path[1:]
+		}
+		if _, err := fs.Stat(files, path); err != nil {
+			// File not found — serve index.html for SPA routing.
+			r = r.Clone(r.Context())
+			r.URL.Path = "/"
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 }
 
 // ServeHTTP implements http.Handler, enabling use with httptest.NewServer and

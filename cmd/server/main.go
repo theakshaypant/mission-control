@@ -43,5 +43,5 @@ func run() error {
 	go a.Scheduler.Run(ctx)
 
 	fmt.Fprintf(os.Stderr, "server: listening on %s\n", addr)
-	return api.New(addr, a.Actions).ListenAndServe(ctx)
+	return api.New(addr, a.Actions, uiFiles()).ListenAndServe(ctx)
 }
