@@ -1,0 +1,103 @@
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--red);
+}
+
+.modal-close {
+  font-size: 14px;
+  padding: 2px 6px;
+}
+
+.modal-item-title {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.modal-item-id {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+.modal-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.modal-mode-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.modal-tab {
+  flex: 1;
+  padding: 6px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-family: var(--font-ui);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.modal-tab:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+}
+.modal-tab.active {
+  background: var(--red-bg);
+  border-color: var(--red);
+  color: var(--red-bright);
+}
+
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.quick-picks {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modal-input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-glow);
+}
+
+.modal-error {
+  font-size: 12px;
+  color: var(--red);
+  margin-bottom: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

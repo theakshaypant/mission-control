@@ -1,0 +1,169 @@
+/* Shared widget styles */
+
+.widget {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.widget-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.widget-filter-clear {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--red-bright);
+  background: rgba(229, 62, 62, 0.12);
+  border: 1px solid rgba(229, 62, 62, 0.3);
+  border-radius: var(--radius);
+  padding: 1px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.widget-filter-clear:hover {
+  background: rgba(229, 62, 62, 0.22);
+}
+
+.widget-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 24px 0;
+  font-family: var(--font-mono);
+}
+
+/* ── Chart tooltip ───────────────────────────────────────── */
+.chart-tooltip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.chart-tooltip-value {
+  font-family: var(--font-mono);
+  color: var(--red-bright);
+  font-weight: 600;
+}
+
+/* ── Donut legend ────────────────────────────────────────── */
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.donut-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.donut-legend-label {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-legend-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Sync status bar ─────────────────────────────────────── */
+.sync-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sync-status-title {
+  flex-shrink: 0;
+}
+
+.sync-status-sources {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sync-source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sync-source-chip:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  background: var(--bg-hover);
+}
+.sync-source-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sync-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sync-dot.online {
+  background: var(--green);
+  box-shadow: 0 0 4px var(--green-glow);
+}
+.sync-dot.offline {
+  background: var(--text-dim);
+}
+
+.sync-source-name {
+  font-size: 11px;
+  color: var(--text);
+}
+
+.sync-source-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

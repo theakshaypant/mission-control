@@ -51,4 +51,7 @@ type ItemFilter struct {
 	// NeedsAttention filters to items that need the user's attention,
 	// taking item state (dismissed, snoozed, last interacted) into account.
 	NeedsAttention bool
+
+	// Snoozed filters to items that are currently snoozed (snooze time is in the future).
+	Snoozed bool
 }

@@ -1,0 +1,144 @@
+.item-card {
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  border-radius: var(--radius);
+}
+
+.item-card:hover {
+  border-color: var(--border-bright);
+}
+
+.item-card:focus-visible {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-glow);
+}
+
+.item-card.has-attention {
+  border-left: 2px solid var(--red);
+}
+
+.item-card.has-attention:hover {
+  box-shadow: -2px 0 8px var(--red-glow);
+}
+
+.item-card.expanded {
+  border-color: var(--border-bright);
+}
+
+/* ── Main row ────────────────────────────────────────────── */
+.item-card-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.item-card-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+  box-shadow: 0 0 4px var(--red-glow);
+}
+
+.item-card:not(.has-attention) .item-card-indicator {
+  background: var(--text-dim);
+  box-shadow: none;
+}
+
+.item-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.item-namespace {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.item-card-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-card.expanded .item-card-title {
+  white-space: normal;
+  overflow: visible;
+}
+
+.item-card-signals {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.item-card-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.item-updated {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.item-chevron {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+/* ── Expanded panel ──────────────────────────────────────── */
+.item-card-expanded {
+  padding: 0 14px 14px;
+}
+
+.expanded-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 12px;
+}
+
+.expanded-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.expanded-row .label {
+  min-width: 60px;
+}
+
+.expanded-id {
+  font-size: 11px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.expanded-url {
+  font-size: 12px;
+  color: var(--blue);
+  word-break: break-all;
+}
+
+.expanded-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}

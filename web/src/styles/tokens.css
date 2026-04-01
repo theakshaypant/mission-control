@@ -1,0 +1,74 @@
+/* ============================================================
+   Mission Control — Design Tokens
+   Dark (default): MI spy aesthetic — near-black, red accent
+   Light: Declassified document — off-white, same red accent
+   ============================================================ */
+
+:root,
+html.dark {
+  --bg:           #070810;
+  --bg-surface:   #0d0f1a;
+  --bg-elevated:  #141726;
+  --bg-hover:     #1a1d2e;
+  --border:       #1e2438;
+  --border-bright:#2a3050;
+
+  --text:         #dde3f0;
+  --text-muted:   #5a6280;
+  --text-dim:     #2e3558;
+
+  --red:          #e53e3e;
+  --red-bright:   #f56565;
+  --red-glow:     rgba(229, 62, 62, 0.18);
+  --red-bg:       rgba(229, 62, 62, 0.10);
+
+  --green:        #38a169;
+  --green-bright: #48bb78;
+  --green-glow:   rgba(56, 161, 105, 0.15);
+
+  --amber:        #d69e2e;
+  --amber-bg:     rgba(214, 158, 46, 0.12);
+
+  --blue:         #4299e1;
+  --blue-bg:      rgba(66, 153, 225, 0.12);
+
+  --font-mono:    'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-ui:      'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius:       4px;
+  --radius-lg:    8px;
+
+  --shadow-card:  0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-glow:  0 0 12px var(--red-glow);
+}
+
+html.light {
+  --bg:           #f0ede8;
+  --bg-surface:   #faf9f7;
+  --bg-elevated:  #ffffff;
+  --bg-hover:     #f0ede8;
+  --border:       #d4cfc8;
+  --border-bright:#b8b2aa;
+
+  --text:         #1a1826;
+  --text-muted:   #6b6680;
+  --text-dim:     #c4bfbb;
+
+  --red:          #c53030;
+  --red-bright:   #e53e3e;
+  --red-glow:     rgba(197, 48, 48, 0.12);
+  --red-bg:       rgba(197, 48, 48, 0.08);
+
+  --green:        #276749;
+  --green-bright: #38a169;
+  --green-glow:   rgba(39, 103, 73, 0.12);
+
+  --amber:        #b7791f;
+  --amber-bg:     rgba(183, 121, 31, 0.10);
+
+  --blue:         #2b6cb0;
+  --blue-bg:      rgba(43, 108, 176, 0.10);
+
+  --shadow-card:  0 1px 4px rgba(0, 0, 0, 0.12);
+  --shadow-glow:  0 0 8px var(--red-glow);
+}

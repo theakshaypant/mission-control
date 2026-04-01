@@ -26,6 +26,7 @@ func (h *itemsHandler) list(w http.ResponseWriter, r *http.Request) {
 	filter := core.ItemFilter{
 		NeedsAttention: q.Get("needs_attention") == "true",
 		WaitsOnMe:      q.Get("waits_on_me") == "true",
+		Snoozed:        q.Get("snoozed") == "true",
 		Source:         core.SourceKind(q.Get("source")),
 		SourceName:     q.Get("source_name"),
 	}

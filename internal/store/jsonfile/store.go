@@ -123,6 +123,12 @@ func (s *Store) ListItems(_ context.Context, filter core.ItemFilter) ([]core.Ite
 				continue
 			}
 		}
+		if filter.Snoozed {
+			state := s.stateFor(item.ID)
+			if state == nil || state.SnoozedUntil == nil || !state.SnoozedUntil.After(time.Now()) {
+				continue
+			}
+		}
 		out = append(out, item)
 	}
 	return out, nil

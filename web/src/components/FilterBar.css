@@ -1,0 +1,71 @@
+.filter-bar {
+  margin-bottom: 16px;
+}
+
+.filter-bar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 16px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.filter-toggle {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.filter-toggle:hover {
+  border-color: var(--border-bright);
+  color: var(--text);
+}
+
+.filter-toggle.active {
+  background: var(--red-bg);
+  border-color: var(--red);
+  color: var(--red-bright);
+  box-shadow: 0 0 6px var(--red-glow);
+}
+
+.filter-select {
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.filter-select:focus {
+  border-color: var(--border-bright);
+}
+
+.filter-refresh {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}

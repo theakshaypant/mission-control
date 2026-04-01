@@ -1,0 +1,19 @@
+/* ── Widget row (charts) ─────────────────────────────────── */
+.widget-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .widget-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .widget-row {
+    grid-template-columns: 1fr;
+  }
+}
