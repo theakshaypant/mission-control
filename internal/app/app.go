@@ -158,6 +158,25 @@ func (a *App) ReloadFromYAML(ctx context.Context, newYAML string) error {
 		}
 	}
 
+	// Reset the sync cursor for any source whose config changed. This forces a
+	// full fetch on the next sync so items from added repos are not skipped by
+	// the incremental cursor.
+	oldByName := make(map[string]config.RawSourceConfig, len(a.Config.Sources))
+	for _, s := range a.Config.Sources {
+		oldByName[s.Name] = s
+	}
+	for _, newSrc := range newSources {
+		oldSrc, existed := oldByName[newSrc.Name]
+		if !existed {
+			continue // brand-new source name — no cursor exists yet
+		}
+		oldData, _ := yaml.Marshal(oldSrc)
+		newData, _ := yaml.Marshal(newSrc)
+		if string(oldData) != string(newData) {
+			_ = a.store.SetLastSyncedAt(ctx, newSrc.Name, time.Time{})
+		}
+	}
+
 	// Save to disk.
 	if err := config.Save(newCfg, a.ConfigPath); err != nil {
 		return fmt.Errorf("save config: %w", err)
