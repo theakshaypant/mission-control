@@ -21,7 +21,15 @@ type Server struct {
 // New constructs a Server that listens on addr and routes all requests
 // through the actions layer. If static is non-nil it is served at / as a
 // single-page application (unknown paths fall back to index.html).
-func New(addr string, a *actions.Actions, static fs.FS) *Server {
+// If getConfig and reloadConfig are non-nil, GET /config and PUT /config
+// are registered for live config editing.
+func New(
+	addr string,
+	a *actions.Actions,
+	static fs.FS,
+	getConfig func() (string, error),
+	reloadConfig func(ctx context.Context, yaml string) error,
+) *Server {
 	items := newItemsHandler(a)
 	sync := newSyncHandler(a)
 
@@ -33,6 +41,12 @@ func New(addr string, a *actions.Actions, static fs.FS) *Server {
 	mux.HandleFunc("GET /sync/status", sync.status)
 	mux.HandleFunc("POST /sync", sync.syncAll)
 	mux.HandleFunc("POST /sync/{source}", sync.syncSource)
+
+	if getConfig != nil && reloadConfig != nil {
+		cfg := newConfigHandler(getConfig, reloadConfig)
+		mux.HandleFunc("GET /config", cfg.get)
+		mux.HandleFunc("PUT /config", cfg.put)
+	}
 
 	if static != nil {
 		mux.Handle("/", spaHandler(static))

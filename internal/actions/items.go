@@ -87,6 +87,29 @@ func (a *Actions) SnoozeItem(ctx context.Context, id string, until time.Time) er
 	return nil
 }
 
+// DismissSource permanently dismisses all items belonging to sourceName.
+// Called when a source is removed from the config during a hot-reload.
+func (a *Actions) DismissSource(ctx context.Context, sourceName string) error {
+	items, err := a.store.ListItems(ctx, core.ItemFilter{SourceName: sourceName})
+	if err != nil {
+		return fmt.Errorf("list items for source %q: %w", sourceName, err)
+	}
+	for _, item := range items {
+		state, err := a.store.GetItemState(ctx, item.ID)
+		if err != nil {
+			return fmt.Errorf("get state %s: %w", item.ID, err)
+		}
+		if state == nil {
+			state = &core.ItemState{ItemID: item.ID}
+		}
+		state.Dismissed = true
+		if err := a.store.SetItemState(ctx, *state); err != nil {
+			return fmt.Errorf("set state %s: %w", item.ID, err)
+		}
+	}
+	return nil
+}
+
 // requireItem returns ErrNotFound (wrapped) if no item with id exists.
 func (a *Actions) requireItem(ctx context.Context, id string) error {
 	items, err := a.store.ListItems(ctx, core.ItemFilter{})

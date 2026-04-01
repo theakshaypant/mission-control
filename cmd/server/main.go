@@ -40,8 +40,8 @@ func run() error {
 		addr = a.Config.ServerAddr()
 	}
 
-	go a.Scheduler.Run(ctx)
+	a.StartScheduler(ctx)
 
 	fmt.Fprintf(os.Stderr, "server: listening on %s\n", addr)
-	return api.New(addr, a.Actions, uiFiles()).ListenAndServe(ctx)
+	return api.New(addr, a.Actions, uiFiles(), a.GetSourcesYAML, a.ReloadFromYAML).ListenAndServe(ctx)
 }

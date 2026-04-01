@@ -70,6 +70,23 @@ The **REFRESH** button reloads the item list from the server without triggering 
 
 ---
 
+## Config editor
+
+Click the **⚙** button in the header to open the config editor. It shows the `sources` section of your config file as YAML — the server config (address, etc.) is not exposed here.
+
+Edit the YAML directly and click **Save & Apply**. The server validates the changes before touching anything: if a source type is unrecognised or required fields are missing, you get an error and nothing is saved. On success the new sources take effect immediately — no restart needed.
+
+**Removed or renamed sources:** if you delete a source or change its name, all items from the old source name are automatically dismissed when you apply. They won't reappear on future syncs.
+
+### Manual config file edits
+
+If you edit `config.yaml` directly on disk while the server is running, the scheduler does not pick up the change automatically. To apply it:
+
+1. Open the config editor in the dashboard — it reads from disk, so it will show your edited file.
+2. Click **Save & Apply** — this applies the changes and hot-reloads the scheduler without restarting the container.
+
+---
+
 ## Item list
 
 Each card shows the item type, title, source, namespace, the signals that fired, and a link to open the item directly.

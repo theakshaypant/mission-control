@@ -89,3 +89,35 @@ export async function syncSource(source) {
 export async function fetchSyncStatus() {
   return apiFetch('/sync/status')
 }
+
+// ── Config ─────────────────────────────────────────────────
+
+/** Fetch the sources section of the config as a YAML string. */
+export async function fetchConfig() {
+  const res = await fetch(`${BASE}/config`)
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`
+    try {
+      const body = await res.json()
+      if (body.error) msg = body.error
+    } catch (_) {}
+    throw new ApiError(res.status, msg)
+  }
+  return res.text()
+}
+
+/** Save an updated sources YAML string. Resolves on success, throws ApiError on failure. */
+export async function saveConfig(yaml) {
+  const res = await fetch(`${BASE}/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'text/plain' },
+    body: yaml,
+  })
+  if (res.status === 204) return
+  let msg = `HTTP ${res.status}`
+  try {
+    const body = await res.json()
+    if (body.error) msg = body.error
+  } catch (_) {}
+  throw new ApiError(res.status, msg)
+}

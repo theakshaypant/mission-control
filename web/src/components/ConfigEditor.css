@@ -1,0 +1,43 @@
+.config-modal {
+  width: min(680px, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.config-loading {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 24px 0;
+  text-align: center;
+}
+
+.config-textarea {
+  width: 100%;
+  min-height: 340px;
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  tab-size: 2;
+}
+.config-textarea:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-glow);
+}

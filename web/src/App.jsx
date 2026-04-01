@@ -9,6 +9,7 @@ import { Header } from './components/Header'
 import { FilterBar } from './components/FilterBar'
 import { ItemList } from './components/ItemList'
 import { SnoozeModal } from './components/SnoozeModal'
+import { ConfigEditor } from './components/ConfigEditor'
 import { KpiTiles } from './widgets/KpiTiles'
 import { SignalChart } from './widgets/SignalChart'
 import { SourceDonut } from './widgets/SourceDonut'
@@ -40,6 +41,7 @@ export default function App() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [sort, setSort] = useState('updated_at')
   const [snoozeTarget, setSnoozeTarget] = useState(null)
+  const [configOpen, setConfigOpen] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState(null)
 
   // Fetch items whenever filters change.
@@ -109,6 +111,7 @@ export default function App() {
         onSyncAll={triggerSyncAll}
         onSyncSource={triggerSyncSource}
         lastRefreshed={lastRefreshed}
+        onConfigOpen={() => setConfigOpen(true)}
       />
 
       <div className="app-body">
@@ -170,6 +173,10 @@ export default function App() {
           onClose={() => setSnoozeTarget(null)}
           onSuccess={handleSnoozeSuccess}
         />
+      )}
+
+      {configOpen && (
+        <ConfigEditor onClose={() => setConfigOpen(false)} />
       )}
     </div>
   )

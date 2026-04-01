@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatRelative } from '../utils'
 import './Header.css'
 
-export function Header({ syncing, syncError, syncStatus, sources, onSyncAll, onSyncSource, lastRefreshed }) {
+export function Header({ syncing, syncError, syncStatus, sources, onSyncAll, onSyncSource, lastRefreshed, onConfigOpen }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [theme, setTheme] = useState(
     () => document.documentElement.classList.contains('light') ? 'light' : 'dark'
@@ -76,6 +76,14 @@ export function Header({ syncing, syncError, syncStatus, sources, onSyncAll, onS
               </>
             )}
           </div>
+
+          <button
+            className="btn btn-ghost"
+            onClick={onConfigOpen}
+            aria-label="Edit configuration"
+          >
+            ⚙
+          </button>
 
           <button
             className="btn btn-ghost theme-toggle"

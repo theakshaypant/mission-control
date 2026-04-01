@@ -14,7 +14,7 @@ type SourceStatus struct {
 
 // SyncAll triggers a full sync of all configured sources.
 func (a *Actions) SyncAll(ctx context.Context) error {
-	if err := a.runner.SyncAll(ctx); err != nil {
+	if err := a.getRunner().SyncAll(ctx); err != nil {
 		return fmt.Errorf("sync all: %w", err)
 	}
 	return nil
@@ -23,7 +23,7 @@ func (a *Actions) SyncAll(ctx context.Context) error {
 // SyncSource triggers a sync for a single named source.
 // Returns an error if the source name is not found.
 func (a *Actions) SyncSource(ctx context.Context, name string) error {
-	if err := a.runner.Sync(ctx, name); err != nil {
+	if err := a.getRunner().Sync(ctx, name); err != nil {
 		return fmt.Errorf("sync %q: %w", name, err)
 	}
 	return nil
@@ -31,7 +31,7 @@ func (a *Actions) SyncSource(ctx context.Context, name string) error {
 
 // SyncStatus returns the last successful sync time for each configured source.
 func (a *Actions) SyncStatus(ctx context.Context) ([]SourceStatus, error) {
-	names := a.runner.Sources()
+	names := a.getRunner().Sources()
 	statuses := make([]SourceStatus, 0, len(names))
 	for _, name := range names {
 		t, err := a.store.GetLastSyncedAt(ctx, name)
