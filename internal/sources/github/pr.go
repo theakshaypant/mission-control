@@ -71,6 +71,8 @@ type prFields struct {
 			CreatedAt time.Time                             `json:"createdAt"`
 		} `json:"nodes"`
 	} `json:"comments"`
+	// State is the PR's lifecycle state: "OPEN", "MERGED", or "CLOSED".
+	State string `json:"state"`
 	// ReviewDecision is GitHub's computed review state for this PR.
 	// Values: "APPROVED", "CHANGES_REQUESTED", "REVIEW_REQUIRED", or "".
 	ReviewDecision string `json:"reviewDecision"`
@@ -109,7 +111,7 @@ query PRsByRepo($owner: String!, $repo: String!, $first: Int!, $after: String) {
     pullRequests(states: [OPEN], first: $first, after: $after, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title url isDraft createdAt updatedAt reviewDecision
+        number title url isDraft state createdAt updatedAt reviewDecision
         author { login }
         assignees(first: 10) { nodes { login } }
         labels(first: 20) { nodes { name } }
@@ -150,7 +152,7 @@ query InvolvedPRs($q: String!, $first: Int!, $after: String) {
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
-        number title url isDraft createdAt updatedAt reviewDecision
+        number title url isDraft state createdAt updatedAt reviewDecision
         repository { nameWithOwner }
         author { login }
         assignees(first: 10) { nodes { login } }
@@ -171,6 +173,34 @@ query InvolvedPRs($q: String!, $first: Int!, $after: String) {
     }
   }
 }`
+
+// closedPRsByRepoQuery fetches recently merged or closed PRs in a single repo,
+// used on incremental syncs to produce tombstones for PRs that are no longer open.
+const closedPRsByRepoQuery = `
+query ClosedPRsByRepo($owner: String!, $repo: String!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequests(states: [MERGED, CLOSED], first: $first, after: $after, orderBy: {field: UPDATED_AT, direction: DESC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes { number state updatedAt }
+    }
+  }
+}`
+
+type closedPRsByRepoResponse struct {
+	Repository struct {
+		PullRequests struct {
+			PageInfo struct {
+				HasNextPage bool   `json:"hasNextPage"`
+				EndCursor   string `json:"endCursor"`
+			} `json:"pageInfo"`
+			Nodes []struct {
+				Number    int       `json:"number"`
+				State     string    `json:"state"`
+				UpdatedAt time.Time `json:"updatedAt"`
+			} `json:"nodes"`
+		} `json:"pullRequests"`
+	} `json:"repository"`
+}
 
 type involvedPRsResponse struct {
 	Search struct {
@@ -271,9 +301,56 @@ func (s *Source) fetchAllPRs(ctx context.Context, since time.Time, maxPRs int) (
 			c := prs.PageInfo.EndCursor
 			cursor = &c
 		}
+
+		// On incremental syncs, also fetch recently merged/closed PRs so we can
+		// tombstone any that are still in the store.
+		if !since.IsZero() {
+			closed, err := s.fetchClosedPRsForRepo(ctx, owner, repo, since)
+			if err != nil {
+				return nil, fmt.Errorf("fetch closed PRs for %s: %w", repoStr, err)
+			}
+			allItems = append(allItems, closed...)
+		}
 	}
 
 	return allItems, nil
+}
+
+// fetchClosedPRsForRepo returns tombstone items for PRs in owner/repo that were
+// merged or closed after since.
+func (s *Source) fetchClosedPRsForRepo(ctx context.Context, owner, repo string, since time.Time) ([]core.Item, error) {
+	var items []core.Item
+	var cursor *string
+	for {
+		vars := map[string]any{
+			"owner": owner,
+			"repo":  repo,
+			"first": maxPerPage,
+			"after": cursor,
+		}
+		data, err := doGraphQL[closedPRsByRepoResponse](ctx, s.config.Token, s.graphqlEndpoint(), closedPRsByRepoQuery, vars)
+		if err != nil {
+			return nil, err
+		}
+		prs := data.Repository.PullRequests
+		done := false
+		for _, pr := range prs.Nodes {
+			if !pr.UpdatedAt.After(since) {
+				done = true
+				break
+			}
+			items = append(items, core.Item{
+				ID:     ItemID(owner+"/"+repo, pr.Number),
+				Closed: true,
+			})
+		}
+		if done || !prs.PageInfo.HasNextPage {
+			break
+		}
+		c := prs.PageInfo.EndCursor
+		cursor = &c
+	}
+	return items, nil
 }
 
 // fetchInvolvedPRs uses GitHub's search API to fetch open PRs across all
@@ -281,12 +358,16 @@ func (s *Source) fetchAllPRs(ctx context.Context, since time.Time, maxPRs int) (
 // when available to limit results to recently updated PRs.
 func (s *Source) fetchInvolvedPRs(ctx context.Context, since time.Time, maxPRs int) ([]core.Item, error) {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "involves:%s is:pr is:open", s.config.User)
+	// On the first run (no cursor) restrict to open PRs to avoid pulling in
+	// historical merged/closed PRs. On incremental runs, also include recently
+	// merged/closed PRs so the store can be tombstoned when a PR closes.
+	if since.IsZero() {
+		fmt.Fprintf(&sb, "involves:%s is:pr is:open", s.config.User)
+	} else {
+		fmt.Fprintf(&sb, "involves:%s is:pr updated:>%s", s.config.User, since.UTC().Format("2006-01-02"))
+	}
 	for _, r := range s.config.Repos {
 		fmt.Fprintf(&sb, " repo:%s", r)
-	}
-	if !since.IsZero() {
-		fmt.Fprintf(&sb, " updated:>%s", since.UTC().Format("2006-01-02"))
 	}
 	searchQuery := sb.String()
 
@@ -334,6 +415,15 @@ func (s *Source) fetchInvolvedPRs(ctx context.Context, since time.Time, maxPRs i
 // normalizePR maps a raw GitHub PR onto a core.Item. namespace is the
 // "owner/repo" string for the PR.
 func (s *Source) normalizePR(pr prFields, namespace string) core.Item {
+	// Merged or closed PRs are tombstones: signal the runner to remove any
+	// stale entry from the store so they stop appearing on the dashboard.
+	if pr.State == "MERGED" || pr.State == "CLOSED" {
+		return core.Item{
+			ID:     ItemID(namespace, pr.Number),
+			Closed: true,
+		}
+	}
+
 	cfg := s.config
 	user := cfg.User
 
