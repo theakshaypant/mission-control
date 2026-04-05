@@ -1,8 +1,9 @@
 EXT_UUID   = mission-control@theakshaypant
 EXT_DIR    = $(HOME)/.local/share/gnome-shell/extensions/$(EXT_UUID)
 IMAGE_NAME ?= mission-control
+DEV_IMAGE  ?= mission-control-dev
 
-.PHONY: test test-e2e test-e2e-github lint install-gnome-ext docker-build
+.PHONY: test test-e2e test-e2e-github test-e2e-github-run test-e2e-jira test-e2e-jira-run lint install-gnome-ext docker-build
 
 # Run all unit tests.
 test:
@@ -22,6 +23,16 @@ test-e2e-github:
 test-e2e-github-run:
 	go test -v -tags integration -run $(TEST) ./test/e2e/github/
 
+# Run only the Jira e2e tests.
+# Requires: JIRA_TOKEN, JIRA_EMAIL, JIRA_HOST, JIRA_JQL
+test-e2e-jira:
+	go test -v -tags integration ./test/e2e/jira/
+
+# Run a specific Jira e2e test by name.
+# Usage: make test-e2e-jira-run TEST=TestJiraSignalAssigned
+test-e2e-jira-run:
+	go test -v -tags integration -run $(TEST) ./test/e2e/jira/
+
 lint:
 	go vet ./...
 
@@ -33,6 +44,7 @@ docker-build:
 # Run the container, mounting the host config directory and matching the host
 # user so file permissions on the mount work without any chown dance.
 docker-run:
+	-docker stop $(IMAGE_NAME) 2>/dev/null
 	docker run -d --rm -p 5040:5040 \
 		--name $(IMAGE_NAME) \
 		--user $$(id -u):$$(id -g) \
@@ -57,3 +69,18 @@ update-gnome-ext:
 	glib-compile-schemas $(EXT_DIR)/schemas/
 	gnome-extensions disable $(EXT_UUID)
 	gnome-extensions enable $(EXT_UUID)
+
+# Build the single-container image (Go API + React dashboard).
+# Usage: make docker-build [IMAGE_NAME=my-tag]
+dev-docker-build:
+	docker build -t $(DEV_IMAGE) .
+
+# Run the container, mounting the host config directory and matching the host
+# user so file permissions on the mount work without any chown dance.
+dev-docker-run:
+	-docker stop $(DEV_IMAGE) 2>/dev/null
+	docker run -d --rm -p 5173:5040 \
+		--name $(DEV_IMAGE) \
+		--user $$(id -u):$$(id -g) \
+		-v $(HOME)/.config/mission-control:/config \
+		$(DEV_IMAGE) -config /config/config.yaml
