@@ -21,6 +21,7 @@ import (
 
 	// Register source factories via init().
 	_ "github.com/theakshaypant/mission-control/internal/sources/github"
+	_ "github.com/theakshaypant/mission-control/internal/sources/jira"
 )
 
 // App wires all mission-control dependencies together. Set ConfigPath before
@@ -134,9 +135,10 @@ func (a *App) ReloadFromYAML(ctx context.Context, newYAML string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	// Parse and validate.
-	var newSources []config.RawSourceConfig
-	if err := yaml.Unmarshal([]byte(newYAML), &newSources); err != nil {
+	// Parse and validate. Accept either a full config file (with a "sources:"
+	// key) or a bare sources list — both are valid inputs from the editor.
+	newSources, err := parseSources([]byte(newYAML))
+	if err != nil {
 		return fmt.Errorf("invalid YAML: %w", err)
 	}
 	newCfg := &config.AppConfig{Sources: newSources, Server: a.Config.Server}
@@ -206,4 +208,21 @@ func (a *App) ReloadFromYAML(ctx context.Context, newYAML string) error {
 
 	a.Config = newCfg
 	return nil
+}
+
+// parseSources unmarshals YAML that is either a bare sources list or a full
+// config file containing a "sources:" key. Both are valid inputs for the
+// dashboard config editor so users can paste either format without error.
+func parseSources(data []byte) ([]config.RawSourceConfig, error) {
+	// Try as a full config first (map with "sources:" key).
+	var full config.AppConfig
+	if err := yaml.Unmarshal(data, &full); err == nil && len(full.Sources) > 0 {
+		return full.Sources, nil
+	}
+	// Fall back to a bare list of sources.
+	var sources []config.RawSourceConfig
+	if err := yaml.Unmarshal(data, &sources); err != nil {
+		return nil, err
+	}
+	return sources, nil
 }
